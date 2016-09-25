@@ -2,16 +2,10 @@ import junit.framework.Assert;
 import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -19,6 +13,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -94,20 +89,22 @@ public class WikiCatalogExport {
             List<Element> filteredElements = elements.stream().filter(filterOutPredicate).collect(toList());
             log.info("Retrieved[{}] - filtered-out[{}] = {} wiki-links from wiki-category url: {}", elements.size(), (elements.size()-filteredElements.size()), filteredElements.size(), wikiCategoryPageUrl);
             if (log.isDebugEnabled()) {
-                filteredElements.stream().map(el -> "https://en.wikipedia.org" + el.attr("href")).
+                filteredElements.stream().map(el -> "https://" + project + el.attr("href")).
                         forEach(url -> { log.debug("Page: {}", url); });
             }
 
             // iterate over the list
             for (Element element : filteredElements) {
-                String id = element.attr("href").substring(6);
-                String url = project + element.attr("href");
+                String title = canoniseTitle(element.attr("title"), project); //or use @title
+                Assert.assertNotNull("Cannot retrieve title for element: " + element, title);
+                String id = title.replaceAll(" ", "_");
+                String url = "https://" + project + "/wiki/" + title;
                 WikiPage wp = WikiPage.builder().
                         project(project).
                         category(category).
                         url(url).
                         id(id).
-                        title(element.text()).
+                        title(title).
                         views(WikiPageStats.retrieveWikiPageStats(id)).
                         build();
 
@@ -115,6 +112,32 @@ public class WikiCatalogExport {
             }
 
             return pages;
+        }
+
+        private static String canoniseTitle(String title, String project) {
+            try {
+                String encodedURL = new URI("https", project, "/w/api.php", "action=query&titles=" + title + "&redirects&format=json", null).toString();
+                JSONObject jsonObject = (JSONObject) HttpUtils.getJSONResource(encodedURL);
+                JSONObject queryResult = (JSONObject) jsonObject.get("query");
+                if (((JSONObject)queryResult.get("pages")).get("-1") != null) {
+                    throw new IllegalArgumentException(format("Title[%s] is not found for project: %s", title, project));
+                }
+                Object redirectObject = ((JSONObject)queryResult.get("pages")).get("redirects");
+                if (redirectObject instanceof JSONArray) {
+                    for (Object o : ((JSONArray) redirectObject)) {
+                        if (o instanceof JSONObject) {
+                            Object toTitle = ((JSONObject) o).get("to");
+                            if (!(toTitle instanceof String)) {
+                                throw new IllegalArgumentException("'pages/redirect[0]/to is not recognised as string: " + queryResult);
+                            }
+                            return (String)toTitle;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error(e);
+            }
+            return title;
         }
     }
 
@@ -180,8 +203,8 @@ public class WikiCatalogExport {
         private static String toDate = "20160903";
 
         public static Integer retrieveWikiPageStats(String pageId) {
-            try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
-                Object resultObject = requestPageStats(httpClient, pageId);
+            try {
+                Object resultObject = requestPageStats(pageId);
                 log.debug(resultObject);
                 Integer views = calculateTotalNumberOfViews(resultObject);
                 if (views == 0) {
@@ -189,7 +212,7 @@ public class WikiCatalogExport {
                     while (resultObject instanceof JSONObject && ((JSONObject) resultObject).containsKey("type") && attempts< MAX_ERROR_RESOLUTION_ATTEMPTS) {
                         Thread.sleep(1000); // Give server a break
                         log.debug("Re-executing request for [{}] because of an error: {}", pageId, resultObject);
-                        resultObject = requestPageStats(httpClient, pageId);
+                        resultObject = requestPageStats(pageId);
                         views = calculateTotalNumberOfViews(resultObject);
                         attempts++;
                     }
@@ -209,13 +232,9 @@ public class WikiCatalogExport {
                                 stream().map(jsonObject -> Integer.parseInt(valueOf(jsonObject.get("views")))).collect(summingInt(Integer::intValue));
         }
 
-        private static Object requestPageStats(CloseableHttpClient httpClient, String pageId) throws IOException, ParseException {
-            HttpGet request = new HttpGet(format("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/%s/daily/%s00/%s00", pageId, fromDate, toDate));
-            request.addHeader("content-type", "application/json");
-            HttpResponse result = httpClient.execute(request);
-            String json = EntityUtils.toString(result.getEntity(), "UTF-8");
-            JSONParser parser = new JSONParser();
-            return parser.parse(json);
+        private static Object requestPageStats(String pageId) throws IOException, ParseException {
+            String url = format("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/%s/daily/%s00/%s00", pageId, fromDate, toDate);
+            return HttpUtils.getJSONResource(url);
         }
 
         private static ArrayList<JSONObject> filterTraverse(Object jsonObject, Predicate<JSONObject> filter) {

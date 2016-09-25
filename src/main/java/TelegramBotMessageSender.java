@@ -96,7 +96,7 @@ public class TelegramBotMessageSender {
     }
 
     private static String getInNativeLanguageIfPossible(String lang, WikiCatalogExport.WikiPage page) throws IOException {
-        String url = "https://" + page.getUrl();
+        String url = (page.getUrl().startsWith("http")) ? page.getUrl() : ("https://" + page.getUrl());
         if ("en".equals(lang) && url.contains("en.wikipedia"))
             return url;
 
