@@ -3,3 +3,6 @@ Sends one wiki page a day. It can be a wiki page of iconic actor, a famous quote
 
 # Integration with Telegram
 Sends a message via Telegram messenger: https://core.telegram.org/bots/api#sendmessage
+
+# Development Plan 
+* Use the normalised wiki page URL, title
