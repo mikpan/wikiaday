@@ -9,7 +9,7 @@
         <Logger name="org.apache.http.client.protocol.ResponseProcessCookies" level="error">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Root level="debug">
+        <Root level="info">
             <AppenderRef ref="Console"/>
         </Root>
     </Loggers>
