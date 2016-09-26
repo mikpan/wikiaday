@@ -94,11 +94,12 @@ public class WikiCatalogExport {
             }
 
             // iterate over the list
-            for (Element element : filteredElements) {
+            filteredElements.stream().forEach(element -> {
                 String title = canoniseTitle(element.attr("title"), project); //or use @title
-                Assert.assertNotNull("Cannot retrieve title for element: " + element, title);
+                if (title == null)
+                    return; //ignore wiki pages w/o title
                 String id = title.replaceAll(" ", "_");
-                String url = "https://" + project + "/wiki/" + title;
+                String url = "https://" + project + "/wiki/" + id;
                 WikiPage wp = WikiPage.builder().
                         project(project).
                         category(category).
@@ -109,7 +110,7 @@ public class WikiCatalogExport {
                         build();
 
                 pages.add(wp);
-            }
+            });
 
             return pages;
         }
@@ -122,7 +123,7 @@ public class WikiCatalogExport {
                 if (((JSONObject)queryResult.get("pages")).get("-1") != null) {
                     throw new IllegalArgumentException(format("Title[%s] is not found for project: %s", title, project));
                 }
-                Object redirectObject = ((JSONObject)queryResult.get("pages")).get("redirects");
+                Object redirectObject = queryResult.get("redirects");
                 if (redirectObject instanceof JSONArray) {
                     for (Object o : ((JSONArray) redirectObject)) {
                         if (o instanceof JSONObject) {
@@ -136,6 +137,7 @@ public class WikiCatalogExport {
                 }
             } catch (Exception e) {
                 log.error(e);
+                return null;
             }
             return title;
         }
