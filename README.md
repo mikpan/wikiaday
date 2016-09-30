@@ -6,3 +6,4 @@ Sends a message via Telegram messenger: https://core.telegram.org/bots/api#sendm
 
 # Development Plan 
 * Add support to receive message  
+# FIX a rule to fetch English writers: Harry potter is not a writer

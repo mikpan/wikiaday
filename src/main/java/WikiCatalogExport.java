@@ -44,7 +44,7 @@ public class WikiCatalogExport {
             return !link.contains("list_of") && !link.contains("russian_") && !link.contains("literature");
         };
         wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_Russian-language_writers", "div#mw-content-text > ul > li > a:first-child", filterOutPredicate);
-        wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_English_writers", "div#mw-content-text > div > ul > li > a", filterOutPredicate);
+        wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_English_writers", "div#mw-content-text > div > ul > li > a:first-child", filterOutPredicate);
         wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_German-language_authors", "div#mw-content-text > dl > dd > a", filterOutPredicate);
         wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_French-language_authors", "div#mw-content-text > ul > li > a:first-child", filterOutPredicate);
 

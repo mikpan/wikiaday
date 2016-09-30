@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.lang.System.getProperty;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.write;
 import static java.nio.file.StandardOpenOption.APPEND;
@@ -32,12 +33,11 @@ import static org.apache.commons.lang3.StringUtils.split;
 public class TelegramBotMessageSender {
 
     private static final Logger logger = LogManager.getLogger(TelegramBotMessageSender.class);
-    public static final Path MESSAGES_FILE_PATH = Paths.get(System.getProperty("MESSAGES_FILE_PATH", "bot.msg"));
-    public static final Path IMPORT_FILE_PATH = Paths.get(System.getProperty("IMPORT_FILE_PATH", "wiki.pages.csv"));
-
+    public static final Path MESSAGES_FILE_PATH = Paths.get(getProperty("MESSAGES_FILE_PATH", "bot.msg"));
+    public static final Path IMPORT_FILE_PATH = Paths.get(getProperty("IMPORT_FILE_PATH", "wiki.pages.csv"));
 
     public static final String BASEURL = "https://api.telegram.org/bot";
-    public static final String TOKEN = "248586768:AAFY8ebEYjlyq0DuBzVbQnEvC5NDwoP3eK0";
+    public static final String TOKEN = getProperty("BOT_TOKEN", "248586768:AAFY8ebEYjlyq0DuBzVbQnEvC5NDwoP3eK0");
 
     public static final Map<String, String> AVAILABLE_CATEGORIES = new LinkedHashMap<String, String>() {{
         put("en","List_of_English_writers");
@@ -114,6 +114,7 @@ public class TelegramBotMessageSender {
     private static void sendMessage(String message) {
         TelegramBot bot = TelegramBotAdapter.build(TOKEN);
         bot.execute(new SendMessage(59323870, message));
+        bot.execute(new SendMessage(65209857, message));
         bot.execute(new SendMessage(295144283, message));
     }
 
