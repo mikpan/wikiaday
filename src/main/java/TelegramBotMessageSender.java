@@ -113,9 +113,10 @@ public class TelegramBotMessageSender {
 
     private static void sendMessage(String message) {
         TelegramBot bot = TelegramBotAdapter.build(TOKEN);
-        bot.execute(new SendMessage(59323870, message));
-        bot.execute(new SendMessage(65209857, message));
-        bot.execute(new SendMessage(295144283, message));
+        Object[] users = new Object[] {59323870, 65209857, 295144283, 290014039};
+        for (Object user : users) {
+            bot.execute(new SendMessage(user, message));
+        }
     }
 
     static class Person {

@@ -5,5 +5,7 @@ Sends one wiki page a day. It can be a wiki page of iconic actor, a famous quote
 Sends a message via Telegram messenger: https://core.telegram.org/bots/api#sendmessage
 
 # Development Plan 
+* Add Spanish language
+* Add user preferences
+* Restore/Store user settings
 * Add support to receive message  
-# FIX a rule to fetch English writers: Harry potter is not a writer
