@@ -22,12 +22,18 @@ import java.util.function.Predicate;
 
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
+import static java.lang.System.getProperty;
 import static java.util.stream.Collectors.summingInt;
 import static java.util.stream.Collectors.toList;
 import static org.apache.logging.log4j.LogManager.getLogger;
 
 /**
  * Wiki catalog utility class that fetches wiki catalog from the Wiki website and exports it into the file.
+ *
+ * Configuration with VM properties:
+ *   * LIST_TO_EXTRACT: one of the list of categories, e.g., List_of_Spanish-language_authors
+ *   * EXTRACT_CSS_PATH: CSS selector for items of the list: "div#mw-content-text > ul > li > a:first-child"
+ *   * PATH_TO_EXPORT: path to export the list to, e.g., ./wiki.pages.csv
  *
  * Examples of catalogs to fetch:
  *   * https://en.wikipedia.org/wiki/List_of_French-language_authors
@@ -43,12 +49,25 @@ public class WikiCatalogExport {
             String link = el.attr("href").toLowerCase();
             return !link.contains("list_of") && !link.contains("russian_") && !link.contains("literature");
         };
-        wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_Russian-language_writers", "div#mw-content-text > ul > li > a:first-child", filterOutPredicate);
-        wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_English_writers", "div#mw-content-text > div > ul > li > a:first-child", filterOutPredicate);
-        wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_German-language_authors", "div#mw-content-text > dl > dd > a", filterOutPredicate);
-        wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_French-language_authors", "div#mw-content-text > ul > li > a:first-child", filterOutPredicate);
+        if (hasProperty("LIST_TO_EXTRACT")) {
+            String category = getProperty("LIST_TO_EXTRACT");
+            String cssQuery = getProperty("EXTRACT_CSS_PATH", "div#mw-content-text > ul > li > a:first-child");
+            wikiCatalog.updateCatalog("en.wikipedia.org", category, cssQuery, filterOutPredicate);
+        } else {
+            wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_Spanish-language_authors", "div#mw-content-text > ul > li > a:first-child", filterOutPredicate);
+            wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_Dutch-language_writers",   "div#mw-content-text > ul > li > a:first-child", filterOutPredicate);
+            wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_Russian-language_writers", "div#mw-content-text > ul > li > a:first-child", filterOutPredicate);
+            wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_English_writers",          "div#mw-content-text > div > ul > li > a", filterOutPredicate);
+            wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_German-language_authors",  "div#mw-content-text > dl > dd > a", filterOutPredicate);
+            wikiCatalog.updateCatalog("en.wikipedia.org", "List_of_French-language_authors",  "div#mw-content-text > ul > li > a:first-child", filterOutPredicate);
+        }
 
-        wikiCatalog.exportToFile(System.getProperty("PATH_TO_EXPORT", "wiki.pages.csv"));
+        wikiCatalog.exportToFile(getProperty("PATH_TO_EXPORT", "wiki.pages.csv"));
+    }
+
+
+    private static boolean hasProperty(String propertyName) {
+        return System.getProperties().keySet().contains(propertyName);
     }
 
     @Data
@@ -73,6 +92,7 @@ public class WikiCatalogExport {
         }
 
         public static List<WikiPage> retrieveCatalog(String project, String category, String cssQuery, Predicate<Element> filterOutPredicate)  {
+            log.info("Retrieve wiki-page catalog '{}' within the project '{}' by applying css path rule: {}", category, project, cssQuery);
             List<WikiPage> pages = new ArrayList<>();
 
             // select elements for wiki project under the given category
