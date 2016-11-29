@@ -36,6 +36,8 @@ import static org.apache.logging.log4j.LogManager.getLogger;
  *   * PATH_TO_EXPORT: path to export the list to, e.g., ./wiki.pages.csv
  *
  * Examples of catalogs to fetch:
+ *   * https://en.wikipedia.org/wiki/List_of_Spanish-language_authors
+ *   * https://en.wikipedia.org/wiki/List_of_Dutch-language_writers
  *   * https://en.wikipedia.org/wiki/List_of_French-language_authors
  *   * https://en.wikipedia.org/wiki/List_of_Russian-language_writers
  *   * https://en.wikipedia.org/wiki/List_of_German-language_authors
