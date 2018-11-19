@@ -8,6 +8,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -96,16 +97,19 @@ public class TelegramBotMessageSender {
     }
 
     private static String getInNativeLanguageIfPossible(String lang, WikiCatalogExport.WikiPage page) throws IOException {
-        String url = (page.getUrl().startsWith("http")) ? page.getUrl() : ("https://" + page.getUrl());
+        String url = page.getUrl().trim();
         if ("en".equals(lang) && url.contains("en.wikipedia"))
             return url;
 
-        Document doc = Jsoup.connect(url).get();
         try {
+            int mainPathInd = url.lastIndexOf('/')+1;
+            String urlEncoded  =  url.substring(0,mainPathInd) + URLEncoder.encode(url.substring(mainPathInd),"UTF-8");
+            Document doc = Jsoup.connect(urlEncoded).get();
+            logger.info("Got the page in native language '{}'", url);
             Elements nativeLink = doc.select("div#p-lang > div > ul > li > a[lang=" + lang + "]");
             url = nativeLink.get(0).attr("href");
-        } catch (Exception ignore) {
-            logger.info("Could not find page in native language '{}': {}", url);
+        } catch (Exception exception) {
+            logger.info("Could not find page in native language '{}': {}", url, exception);
         }
         return url;
     }
